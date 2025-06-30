@@ -20,5 +20,5 @@ Clona el repositorio:
 
 ```bash
 git clone https://github.com/AMJ1601/OPSDIAG
-cd diagnostico-servidor
-chmod +x diagnostico.sh
+cd OPSDIAG
+chmod +x opsdiag.sh
