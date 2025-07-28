@@ -1,342 +1,348 @@
 #!/bin/bash
-# Autor: Antonio Madrid
-# Descripción: Diágnostico completo del servidor
-# Fecha: 24/06/2025
-# SO: Debian 12
+# Author: Antonio Madrid
+# Description: Complete server diagnostics
+# Date: 24/06/2025
+# OS: Debian 12
 # Version: 1.0.0
 
-# Paleta de colores
-greenColour="\e[0;32m\033[1m"
-endColour="\033[0m\e[0m"
-redColour="\e[0;31m\033[1m"
-blueColour="\e[0;34m\033[1m"
-yellowColour="\e[0;33m\033[1m"
-purpleColour="\e[0;35m\033[1m"
-turquoiseColour="\e[0;36m\033[1m"
-grayColour="\e[0;37m\033[1m"
+# Color palette
+greenColor="\e[0;32m\033[1m"
+endColor="\033[0m\e[0m"
+redColor="\e[0;31m\033[1m"
+blueColor="\e[0;34m\033[1m"
+yellowColor="\e[0;33m\033[1m"
+purpleColor="\e[0;35m\033[1m"
+turquoiseColor="\e[0;36m\033[1m"
+grayColor="\e[0;37m\033[1m"
 
-# Root
+# Root check
 if [ $UID != 0 ]; then
-	echo -e "${redColour}[!] Mejor ejecutar con root"
+	echo -e "${redColor}[!] Better to run as root"
 fi
 
-#Comprobación de existencias de comandos
-function requeriments(){
-	comands=("free" "echo" "exit" "date" "uptime" "uname" "top" "ps" "who" "df" "awk" "grep" "sed" "cut" "tr" "systemctl" "journalctl" "nmap" "ping" "jobs" "cat" "ip")
-	for comand in ${comands[@]}; do
-		if ! command -v $comand &>/dev/null; then
-			echo -e "${redColour}[!] Comando no encontrado $comand"	
+# Command requirements check
+function requirements(){
+	commands=("free" "echo" "exit" "date" "uptime" "uname" "top" "ps" "who" "df" "awk" "grep" "sed" "cut" "tr" "systemctl" "journalctl" "nmap" "ping" "jobs" "cat" "ip")
+	for command in ${commands[@]}; do
+		if ! command -v $command &>/dev/null; then
+			echo -e "${redColor}[!] Command not found $command"	
 		else
-			echo -e "${blueColour}[+] Comando encontrado $comand "
+			echo -e "${blueColor}[+] Command found $command "
 		fi
 	done
-	salto
+	separator
 }
-# Mensaje de despedida
-trap 'echo -e "${blueColour}Hemos terminado 😊${endColour}​"' EXIT # Cuando termine el script ejecuta el echo
+# Farewell message
+trap 'echo -e "${blueColor}We are done ${endColor}"' EXIT # When script ends, executes the echo
 
-# Detección de errores
-set -eo pipefail # -e: cualquier comando retorna código distinto a 0 el script termina, -o pipefile: si algún comando falla en un pipeline lo detecta
+# Error detection
+set -eo pipefail # -e: if any command returns non-zero code, script ends. -o pipefail: detects failures in pipelines
 function error(){
-	echo -e "{redColour}Error en la línea $1, $2"
+	echo -e "{redColor}Error on line $1, $2"
 	exit 1	
 }
-trap 'error "$LINENO" "$BASH_COMMAND"' ERR # Cuando detecta error ejecuta la función con la línea donde ha fallado el código y el comando que ha fallado
+trap 'error "$LINENO" "$BASH_COMMAND"' ERR # When error is detected, executes function with line number and failed command
 
-# Función estética para ejecutar al finalizar funciones
-function salto(){
+# Aesthetic function to execute after functions
+function separator(){
 	echo -e "\n"
 	for i in {1..100}; do
-		echo -ne "${grayColour}-${endColour}" # bucle que imprime guiones sin saltos de linea gracias a -n
+		echo -ne "${grayColor}-${endColor}" # loop that prints dashes without line breaks thanks to -n
 	done
 	echo -e "\n"
 }
 
-# Capturar control c y salir
+# Capture Ctrl+C and exit
 trap ctrl_c INT
 function ctrl_c(){
-	echo -e "${redColour}[!] Saliendo...${endColour}"
+	echo -e "${redColor}[!] Exiting...${endColor}"
 	exit 1
 }
 
-# Panel de ayuda
-function helpanel(){
-	salto
+# Help panel
+function help_panel(){
+	separator
 	echo -e "\n"
-	echo -e "\t${yellowColour}-p: checkeo de múltiples servicios${endColour}"
-		echo -e "\t\t${yellowColour}Proporcioname los servicios \"ssh,docker\" o ssh,docker (PERO SIN ESPACIOS)${endColour}"
-	echo -e "\t${yellowColour}-j: Fallos de systmd (desde el último boot)${endColour}"
-		echo -e "\t\t${yellowColour}Proporcioname los niveles que quieres ver (1-3) o (3), 7 es el último ${endColour}"
-	echo -e "\t${yellowColour}-o: Escanea un host${endColour}"
-		echo -e "\t\t${yellowColour}Proporciona IP (192.168.10.0) [!] Escanea todos los puertos${endColour}"
-	echo -e "\t${yellowColour}-s: escaneo de hosts activos locales${endColour}"
-		echo -e "\t\t${yellowColour}Proporciona IP/MASK (192.168.10.0/24) [!] Solo escanea los 1000 puertos mas usados${endColour}"
-	echo -e "\t${yellowColour}-d: Ver sistemas de archivos${endColour}"
-	echo -e "\t${yellowColour}-c: Ver uso del procesador${endColour}"
-	echo -e "\t${yellowColour}-m: Ver uso de la memoria${endColour}"
-	echo -e "\t${yellowColour}-f: Ver servicios del sistemas caidos${endColour}"
-	echo -e "\t${yellowColour}-i: Monitor de interfaces de red${endColour}"
-	echo -e "\t${yellowColour}-r: Comprobar existencia de comandos necesarios${endColour}"
-	echo -e "\t${yellowColour}-h: Panel de ayuda${endColour}"
+	echo -e "\t${yellowColor}-p: multiple services check${endColor}"
+		echo -e "\t\t${yellowColor}Provide me services \"ssh,docker\" or ssh,docker (BUT WITHOUT SPACES)${endColor}"
+	echo -e "\t${yellowColor}-j: Systemd failures (since last boot)${endColor}"
+		echo -e "\t\t${yellowColor}Provide levels you want to see (1-3) or (3), 7 is the last ${endColor}"
+	echo -e "\t${yellowColor}-o: Scan a host${endColor}"
+		echo -e "\t\t${yellowColor}Provide IP (192.168.10.0) [!] Scans all ports${endColor}"
+	echo -e "\t${yellowColor}-s: scan local active hosts${endColor}"
+		echo -e "\t\t${yellowColor}Provide IP/MASK (192.168.10.0/24) [!] Only scans top 1000 ports${endColor}"
+	echo -e "\t${yellowColor}-d: View filesystems${endColor}"
+	echo -e "\t${yellowColor}-c: View CPU usage${endColor}"
+	echo -e "\t${yellowColor}-m: View memory usage${endColor}"
+	echo -e "\t${yellowColor}-f: View failed system services${endColor}"
+	echo -e "\t${yellowColor}-i: Network interfaces monitor${endColor}"
+	echo -e "\t${yellowColor}-r: Check required commands existence${endColor}"
+    echo -e "\t${yellowColor}-k  Check fails logins${endColour}"
+	echo -e "\t${yellowColor}-h: Help panel${endColor}"
 }
 
-# Si no hay argumentos muestra el panel de ayuda y sale y si no muestra la fecha y el tiempo que lleva encendido el sistema
+# If no arguments, show help panel and exit. Otherwise show date and system uptime
 if [[ $# == 0 ]]; then
-	helpanel
+	help_panel
 	exit 1
 else
 	clear
-	dat=$(date)
-    tactivo=$(uptime | xargs)
+	date=$(date)
+    uptime=$(uptime | xargs)
     kernel=$(uname -r)
 	hostname=$(cat /etc/hostname)
-	echo -e "${yellowColour}Fecha: ${purpleColour}$dat\n${yellowColour}Tiempo activo: ${purpleColour}$tactivo${endColour}"
-    echo -e "${yellowColour}Versión de kernel: ${purpleColour}$kernel${endColour}"
-	echo -e "${yellowColour}Nombre del equipo: ${purpleColour}$hostname${endColour}"
-	salto
+	echo -e "${yellowColor}Date: ${purpleColor}$date\n${yellowColor}Uptime: ${purpleColor}$uptime${endColor}"
+    echo -e "${yellowColor}Kernel version: ${purpleColor}$kernel${endColor}"
+	echo -e "${yellowColor}Hostname: ${purpleColor}$hostname${endColor}"
+	separator
 fi
 
-# Mirar memoria en uso y memoria total
-function showmemory(){
-	memuso=$(free -h | awk '/Mem:/ {print $3}')
-	memtotal=$(free -h | awk '/Mem:/ {print $2}') # Coge valores de la RAM legibles
-	memuso2=$(free | awk '/Mem:/ {print $3}') 
-	memtotal2=$(free | awk '/Mem:/ {print $2}') # Coge valores de la RAM en la misma unidad de media
-	porcentaje=$(( memuso2 * 100 / memtotal2 )) # Calculo de % de uso de la RAM
-	todo="Memoria en uso: $memuso \tMemoria total: $memtotal \tPorcentaje de uso: $porcentaje%"
-	if [ $porcentaje -lt 90 ]; then
-		echo -e "${blueColour}$todo${endColour}\n"
+# Check used and total memory
+function show_memory(){
+	mem_used=$(free -h | awk '/Mem:/ {print $3}')
+	mem_total=$(free -h | awk '/Mem:/ {print $2}') # Gets RAM values in human-readable format
+	mem_used2=$(free | awk '/Mem:/ {print $3}') 
+	mem_total2=$(free | awk '/Mem:/ {print $2}') # Gets RAM values in same unit of measure
+	percentage=$(( mem_used2 * 100 / mem_total2 )) # RAM usage % calculation
+	all_info="Memory used: $mem_used \tTotal memory: $mem_total \tUsage percentage: $percentage%"
+	if [ $percentage -lt 90 ]; then
+		echo -e "${blueColor}$all_info${endColor}\n"
 	else
-		echo -e "${redColour}$todo${endColour}\n"
-	fi # Según el % lo imprime de un color u otro
-	echo -e "${greenColour}Procesos que mas ram consume de cada usuario:${endColour}"
-	echo -e "${turquoiseColour}$(ps aux | head -1)${endColour}"
-	echo -e "${yellowColour}$(ps aux --sort=-%mem | awk '$1=="root" {print;exit}')${endColour}"
-	users=$(who | awk '{printf "%s ", $1}') # Usuarios conecados
+		echo -e "${redColor}$all_info${endColor}\n"
+	fi # Prints in different colors based on percentage
+	echo -e "${greenColor}Processes consuming most RAM per user:${endColor}"
+	echo -e "${turquoiseColor}$(ps aux | head -1)${endColor}"
+	echo -e "${yellowColor}$(ps aux --sort=-%mem | awk '$1=="root" {print;exit}')${endColor}"
+	users=$(who | awk '{printf "%s ", $1}') # Connected users
 	if [ "$users" ]; then
 		for user in $users; do 
-			proces=$(ps aux --sort=-%mem | awk -v user="$user" '$1==user {print;exit}')
-			echo -e "${yellowColour}$proces${endColour}"
+			process=$(ps aux --sort=-%mem | awk -v user="$user" '$1==user {print;exit}')
+			echo -e "${yellowColor}$process${endColor}"
 		done
-	fi # Itera los usuarios e imprime el proceso que mas consume de cada uno de ellos
-	salto
+	fi # Iterates users and prints most consuming process for each
+	separator
 }
 
-# Mirar uso del procesador
-function showcpu(){
-	uso=$((100 - $(top -bn1 | awk '/Cpu/ gsub(/[.,]/, " "){ for(i=1;i<=NF;i++){ if($i=="id"){ printf "%s", $(i-2)}}}'))) # Calcula el % de uso de la CPU con datos que propociona top, exactamente id
-	imprimeuso="Uso CPU: $uso%"
-	if [ $uso -ge 90 ]; then
-		echo -e "${redColour}$imprimeuso${endColour}\n"
+# Check CPU usage
+function show_cpu(){
+	usage=$((100 - $(top -bn1 | awk '/Cpu/ gsub(/[.,]/, " "){ for(i=1;i<=NF;i++){ if($i=="id"){ printf "%s", $(i-2)}}}'))) # Calculates CPU usage % with top data
+	print_usage="CPU Usage: $usage%"
+	if [ $usage -ge 90 ]; then
+		echo -e "${redColor}$print_usage${endColor}\n"
 	else
-		echo -e "${blueColour}$imprimeuso${endColour}\n"
-	fi # Según el procentaje lo imprime de distintos colores
-	echo -e "${greenColour}Procesos que mas cpu consume de cada usuario:${endColour}"
-	echo -e "${turquoiseColour}$(ps aux | head -1)${endColour}" # Muestra la primera linea para entender los datos que proporciona el script
-	echo -e "${yellowColour}$(ps aux --sort=-%cpu | awk '$1=="root" {print;exit}')${endColour}"
-	users=$(who | awk '{printf "%s ", $1}') # Usuarios conectados
+		echo -e "${blueColor}$print_usage${endColor}\n"
+	fi # Prints in different colors based on percentage
+	echo -e "${greenColor}Processes consuming most CPU per user:${endColor}"
+	echo -e "${turquoiseColor}$(ps aux | head -1)${endColor}" # Shows first line to understand script data
+	echo -e "${yellowColor}$(ps aux --sort=-%cpu | awk '$1=="root" {print;exit}')${endColor}"
+	users=$(who | awk '{printf "%s ", $1}') # Connected users
 	if [ "$users" ]; then
 		for user in $users; do 
-			proces=$(ps aux --sort=-%cpu| awk -v user="$user" '$1==user {print;exit}')
-			echo -e "${yellowColour}$proces${endColour}"
+			process=$(ps aux --sort=-%cpu| awk -v user="$user" '$1==user {print;exit}')
+			echo -e "${yellowColor}$process${endColor}"
 		done
-	fi # Itera usuarios con el proceso que mas consume de cada uno de ellos
-	salto
+	fi # Iterates users with most consuming process for each
+	separator
 }
 
-function showparti(){
-	df -h | while read -r filesystem size used avail use mounted; do # Lee linea por linea guardando valores en esas variables
-		uso=$(echo "$use" | tr -d "\%") # Quita el porcentaje
-		if [[ $uso -ge 90 ]] ; then
-			# Hacemos una tabla sin bordes para imprimir de manera mas legible los datos
-			printf "${redColour}%-15s %-15s %-15s %-15s %-15s %-15s\n" "$filesystem" \ 
+function show_partitions(){
+	df -h | while read -r filesystem size used avail use mounted; do # Reads line by line storing values in these variables
+		usage=$(echo "$use" | tr -d "\%") # Removes percentage
+		if [[ $usage -ge 90 ]] ; then
+			# Create a borderless table to print data more readably
+			printf "${redColor}%-15s %-15s %-15s %-15s %-15s %-15s\n" "$filesystem" \ 
 				"$size" "$used" "$avail" "$use" "$mounted"
 		else
 			if [ "$filesystem" == "Filesystem" ]; then
-				printf "${turquoiseColour}%-15s %-15s %-15s %-15s %-15s %-15s\n" "$filesystem" \
+				printf "${turquoiseColor}%-15s %-15s %-15s %-15s %-15s %-15s\n" "$filesystem" \
                                         	"$size" "$used" "$avail" "$use" "$mounted"
 			else
-				printf "${blueColour}%-15s %-15s %-15s %-15s %-15s %-15s\n" "$filesystem" \
+				printf "${blueColor}%-15s %-15s %-15s %-15s %-15s %-15s\n" "$filesystem" \
                                         	"$size" "$used" "$avail" "$use" "$mounted"
-			fi # Imprime la primera linea de otro color
+			fi # Prints first line in different color
 		fi
-	done # Según el porcentaje lo imprime de una con un color u otro
-	salto
+	done # Prints in different colors based on percentage
+	separator
 }
 
-# Servicios del sistemas fallidos
-function servicefailed(){
-	echo -e "${turquoiseColour}Servicios fallidos:${endColour}\n"
+# Failed system services
+function failed_services(){
+	echo -e "${turquoiseColor}Failed services:${endColor}\n"
 	systemctl --failed
-	salto
+	separator
 }
 
-# Errores del systemd
-function jerrors(){
-	if [[ ! $1 =~ ^[0-9] ]] || [[ ${#1} == 3 ]] && [[ ! "$1" =~ [\-] ]] ; then # Valida formato del getopt proporcionado
-		echo -e "${redColour}[!] Argumento invalido${endColour}"
-		helpanel
+# Systemd errors
+function journal_errors(){
+	if [[ ! $1 =~ ^[0-9] ]] || [[ ${#1} == 3 ]] && [[ ! "$1" =~ [\-] ]] ; then # Validates getopt format
+		echo -e "${redColor}[!] Invalid argument${endColor}"
+		help_panel
 		return 1
 	fi
-	n1=$(echo "$1" | sed 's/-/ /g' | awk '{print $1}')
-	n2=$(echo "$1" | sed 's/-/ /g' | awk '{print $2}') # Divide los datos
-	if [[ $n1 -gt 7 ]] || [[ $n2 -gt 7 ]]; then # Valida otra vez el getopt proporcionado
-		echo -e "${redColour}[!] Argumento invalido${endColour}"
-		helpanel
+	level1=$(echo "$1" | sed 's/-/ /g' | awk '{print $1}')
+	level2=$(echo "$1" | sed 's/-/ /g' | awk '{print $2}') # Splits data
+	if [[ $level1 -gt 7 ]] || [[ $level2 -gt 7 ]]; then # Validates getopt again
+		echo -e "${redColor}[!] Invalid argument${endColor}"
+		help_panel
 		return 1
 	fi
-	if [ -z "$n2" ]; then
-		n2="$n1"
+	if [ -z "$level2" ]; then
+		level2="$level1"
 	fi
-	echo -e "${redColour}[!] Desde el último boot${endColour}"
-	for (( i=n1;i<=n2;i++ )); do
+	echo -e "${redColor}[!] Since last boot${endColor}"
+	for (( i=level1;i<=level2;i++ )); do
 		if [ $i -eq 1 ]; then
-			echo -e "${turquoiseColour}Errores de acción inmediata${endColour}"
+			echo -e "${turquoiseColor}Immediate action errors${endColor}"
 			journalctl -p $i -xb
 		elif [ $i -eq 2 ]; then
-			echo -e "${turquoiseColour}Errores críticos${endColour}"
+			echo -e "${turquoiseColor}Critical errors${endColor}"
 			journalctl -p $i -xb
 		elif [ $i -eq 3 ]; then
-			echo -e "${turquoiseColour}Errores no críticos${endColour}"
+			echo -e "${turquoiseColor}Non-critical errors${endColor}"
 			journalctl -p $i -xb
 		else
-			echo -e "${turquoiseColour}Errores de nivel $i (menos severos) ${endColour}"
+			echo -e "${turquoiseColor}Level $i errors (less severe) ${endColor}"
 			journalctl -p $i -xb
 		fi
-	done # Itera por los niveles detectando en cual está y proporcionando la información
-	salto
+	done # Iterates through levels detecting which one it's in and providing information
+	separator
 }
 
-# Monitorear interfaces de red
-function checkint(){
-	interfaces=$(ip -br addr | awk '{printf "%s ", $1}') # Detecta las interfaces disponibles
+# Monitor network interfaces
+function check_interfaces(){
+	interfaces=$(ip -br addr | awk '{printf "%s ", $1}') # Detects available interfaces
 	for int in $interfaces; do
-		RX=$(($(cat /sys/class/net/"$int"/statistics/rx_bytes) / 1024)) # directorio con los B de descarga y calculo a MB
-		TX=$(($(cat /sys/class/net/"$int"/statistics/tx_bytes) / 1024)) # directorio con los B de subida y calculo a MB
-		echo -e "${turquoiseColour}Int: ${greenColour}$int${turquoiseColour} IP: ${greenColour}$(ip a s "$int" | awk '/inet/ {printf "%s ", $2}')${turquoiseColour}MAC: ${greenColour}$(ip a s "$int" | awk '/link\// {printf "%s ", $2}')${endColour}"
-		echo -e "${yellowColour}$(ip -s link show dev "$int" | tail -n +3)${endColour}"
-		echo -e "\n${blueColour}Mas legible:${endColour}"
-		echo -e "${turquoiseColour}RX: ${greenColour}$RX MB${turquoiseColour} TX: ${greenColour}$TX MB${endColour}\n"
-	done # Las itera proporcionando datos
-	echo -e "${purpleColour}[+] RX= recibido TX= enviado${endColour}"
-	salto
+		RX=$(($(cat /sys/class/net/"$int"/statistics/rx_bytes) / 1024)) # directory with download bytes converted to MB
+		TX=$(($(cat /sys/class/net/"$int"/statistics/tx_bytes) / 1024)) # directory with upload bytes converted to MB
+		echo -e "${turquoiseColor}Int: ${greenColor}$int${turquoiseColor} IP: ${greenColor}$(ip a s "$int" | awk '/inet/ {printf "%s ", $2}')${turquoiseColor}MAC: ${greenColor}$(ip a s "$int" | awk '/link\// {printf "%s ", $2}')${endColor}"
+		echo -e "${yellowColor}$(ip -s link show dev "$int" | tail -n +3)${endColor}"
+		echo -e "\n${blueColor}More readable:${endColor}"
+		echo -e "${turquoiseColor}RX: ${greenColor}$RX MB${turquoiseColor} TX: ${greenColor}$TX MB${endColor}\n"
+	done # Iterates them providing data
+	echo -e "${purpleColor}[+] RX= received TX= sent${endColor}"
+	separator
 }
 
-# Getopts (opciones del script)
-while getopts "p:j:s:o:dcmfirh*" arg; do
+authentication-failure(){
+    echo -e "$(journalctl | grep "authentication failure" | tail -30)"
+    separator
+}
+# Getopts (script options)
+while getopts "p:j:s:o:dcmfkirh*" arg; do
         case $arg in
 			p)
 				services="$OPTARG"
-				checkser=1
+				check_services_flag=1
 				;;
 			s)
 				IP="$OPTARG"
-				scanhcont=1
+				scan_hosts_flag=1
 				;;
 			o) 
-				IPh="$OPTARG"
-				scanother=1
+				IP_host="$OPTARG"
+				scan_other_flag=1
 				;;
-			d) showparti ;;
-			c) showcpu ;;
-			m) showmemory ;;
-			f) servicefailed ;;
-			j) jerrors "$OPTARG" ;;
-			i) checkint ;;
-			r) requeriments;;
-            h) helpanel ;;
-			*) helpanel ;;
+			d) show_partitions ;;
+			c) show_cpu ;;
+			m) show_memory ;;
+			f) failed_services ;;
+			j) journal_errors "$OPTARG" ;;
+			i) check_interfaces ;;
+			r) requirements;;
+            k) authentication-failure;;
+            h) help_panel ;;
+			*) help_panel ;;
         esac
 done
 
-# Requerimentos de paquetes
-if [[ $scanhcont -eq 1 ]] || [[ $scanother -eq 1 ]]; then # Si algún getopt es pronunciado
-	if ! dpkg -s nmap net-tools &>/dev/null; then # Detecta si existen los paquetes necesarios para instalarlos en caso necesario
-		echo -e "${redColour}[!] No esta instalado nmap y/o net-tools ¿Quieres instalarlo? [S/n]${endColour}"
-		read -r conf
-		if [[ $conf =~ ^[Ss] ]]; then
-			echo -e "${blueColour}[+] Instalando...${endColour}"
+# Package requirements
+if [[ $scan_hosts_flag -eq 1 ]] || [[ $scan_other_flag -eq 1 ]]; then # If any getopt is used
+	if ! dpkg -s nmap net-tools &>/dev/null; then # Detects if required packages are installed to install them if needed
+		echo -e "${redColor}[!] nmap and/or net-tools not installed. Do you want to install them? [Y/n]${endColor}"
+		read -r confirmation
+		if [[ $confirmation =~ ^[Yy] ]]; then
+			echo -e "${blueColor}[+] Installing...${endColor}"
             sudo apt update &>/dev/null && sudo apt install nmap net-tools -y &>/dev/null
-			echo -e "${blueColour}[+] Instalado${endColour}"
+			echo -e "${blueColor}[+] Installed${endColor}"
 		else
-			echo -e "${redColour}[!] No se instalará${endColour}"
+			echo -e "${redColor}[!] Won't be installed${endColor}"
 			exit 1
 		fi
 	fi
 fi
 
-# Escaneo de hosts activos
-function scanhost(){
-	printf "${turquoiseColour}%-15s %-15s %-17s %-50s\n${endColour}" "" "IP" "MAC" "PORT" # Damos formato a la tabla
-	while read -r IP MAC; do # Recorre linea por linea del comando *, que guarda en IP y MAC los valores ordenados, osea IP el primer argumento MAC el segundo
+# Active hosts scan
+function scan_hosts(){
+	printf "${turquoiseColor}%-15s %-15s %-17s %-50s\n${endColor}" "" "IP" "MAC" "PORT" # Format the table
+	while read -r IP MAC; do # Reads line by line from command *, storing ordered values in IP and MAC
 		while [ "$(jobs -rp | wc -l)" -ge 20 ]; do
     		sleep 0.2
-  		done # Si superamos los 20 jobs hace sleep para que no pueda hacer mas
+  		done # If we exceed 20 jobs, sleeps so no more can be created
 		{
 		PORT=$(nmap -Pn --top-ports 1000 --max-retries 2 -T3 -sV "$IP" 2>/dev/null | awk '/^[0-9]+\/tcp/ {for(i=1;i<=NF;i++){ if(i!=2){printf "%s ", $i}}}')
 		if [ -z "$PORT" ]; then 
-			PORT=$(echo -e "${blueColour}No hay puertos activos${endColour}")
+			PORT=$(echo -e "${blueColor}No active ports${endColor}")
 		fi
-		printf "${turquoiseColour}%-15s ${yellowColour}%-15s %-17s %-50s\n${endColour}" "Activo:" "$IP" "$MAC" "$PORT"
-		} & # Por cada IP escanea los 1000 puertos mas frecuentes y lo guarda en una variable que luego usamos, lo ejecuta en jobs (background)
-	done < <(nmap -sn 192.168.1.0/24 | awk '/Nmap scan report for/ {ip=$5} /MAC Address:/ {print ip, $3}') # * Este es el comando que se recorre linea por line
-	wait # Espera a que los jobs terminen
-	salto
+		printf "${turquoiseColor}%-15s ${yellowColor}%-15s %-17s %-50s\n${endColor}" "Active:" "$IP" "$MAC" "$PORT"
+		} & # For each IP scans top 1000 ports and stores in variable, executes in jobs (background)
+	done < <(nmap -sn 192.168.1.0/24 | awk '/Nmap scan report for/ {ip=$5} /MAC Address:/ {print ip, $3}') # * This is the command read line by line
+	wait # Waits for jobs to finish
+	separator
 }
 
-if [[ $scanhcont == 1 ]]; then
-	if [[ $IP =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$ ]]; then # Valido el formato de la variable
-		scanhost
+if [[ $scan_hosts_flag == 1 ]]; then
+	if [[ $IP =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$ ]]; then # Validates variable format
+		scan_hosts
 	else
-		echo -e "${redColour}[!] El formato de la IP no es válido...${endColour}"
-		helpanel
+		echo -e "${redColor}[!] IP format is invalid...${endColor}"
+		help_panel
 		exit 1
 	fi
 fi
 
-# Escaneo de un único host
-function scanotherhost(){
-	all=$(nmap -sV -p- -T3 "$IPh" | awk '/MAC Address:/ {print $3} /^[1-9]/ {printf "%s %s ", $1, $3}') # MAC y los puertos acivos con su versión
-	mac=$(echo "$all" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-zA-Z]+:/) print $i; exit}') # Detecta solo la MAC según la variable anterior
-	latencia=$(ping "$IPh" -c1 | awk -F 'time=' '/time=/ {print $2}') # Coge latencia por ICMP
-	ports=$(nmap -sV -p- -T3 "$IPh" | awk '/^[0-9]+\/tcp/ {for (i=1;i<=NF;i++) if(i!=2) printf "%s ", $i; print ""}')
+# Single host scan
+function scan_other_host(){
+	all=$(nmap -sV -p- -T3 "$IP_host" | awk '/MAC Address:/ {print $3} /^[1-9]/ {printf "%s %s ", $1, $3}') # MAC and active ports with their version
+	mac=$(echo "$all" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-zA-Z]+:/) print $i; exit}') # Detects only MAC from previous variable
+	latency=$(ping "$IP_host" -c1 | awk -F 'time=' '/time=/ {print $2}') # Gets ICMP latency
+	ports=$(nmap -sV -p- -T3 "$IP_host" | awk '/^[0-9]+\/tcp/ {for (i=1;i<=NF;i++) if(i!=2) printf "%s ", $i; print ""}')
     if [[ -z "$ports" ]]; then
-        ports="No hay puertos activos"
+        ports="No active ports"
     fi
-    echo -e "${blueColour}IP: $IPh MAC: $mac${endColour}\n${yellowColour}Ports: $ports ${endColour}"
-	echo -e "${turquoiseColour}Latencia ICMP: $latencia ${endColour}"
-	salto
+    echo -e "${blueColor}IP: $IP_host MAC: $mac${endColor}\n${yellowColor}Ports: $ports ${endColor}"
+	echo -e "${turquoiseColor}ICMP latency: $latency ${endColor}"
+	separator
 }
 
-if [[ "$scanother" -eq 1 ]]; then
-	if [[ $IPh =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then # Valida el formato proporcionado
-		scanotherhost
+if [[ "$scan_other_flag" -eq 1 ]]; then
+	if [[ $IP_host =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then # Validates provided format
+		scan_other_host
 	else
-		echo -e "${redColour}[!] El formato de la IP no es válido...${endColour}"
-		helpanel
+		echo -e "${redColor}[!] IP format is invalid...${endColor}"
+		help_panel
 		exit 1
 	fi
 fi
 
-#Checkeo de múltiples servicios
-function checkservices(){
+# Multiple services check
+function check_services(){
 	for service in ${services//,/ }; do
-		if [[ $(systemctl is-active "$service") == "active" ]]; then # Detecta si el servicio esta activo
-			echo -e "${blueColour}El servicio ${yellowColour}$service${blueColour} está activo"
+		if [[ $(systemctl is-active "$service") == "active" ]]; then # Detects if service is active
+			echo -e "${blueColor}Service ${yellowColor}$service${blueColor} is active"
 		else
-			echo -en "${redColour}El servicio ${yellowColour}$service${redColour} está inactivo; "
-			err=$(journalctl -u "$service" | tail -4 | awk '/systemd\[1\]/ {for (i=7;i<=NF;i++) printf "%s ", $i}')
-			if [[ -z $err ]]; then # Si no hay contenido en la variable
-				if ! systemctl status &>/dev/null "$service"; then # detecta si el servicio existe
-				echo -e "${redColour}[!] No exixte${endColour}"
+			echo -en "${redColor}Service ${yellowColor}$service${redColor} is inactive; "
+			error=$(journalctl -u "$service" | tail -4 | awk '/systemd\[1\]/ {for (i=7;i<=NF;i++) printf "%s ", $i}')
+			if [[ -z $error ]]; then # If variable is empty
+				if ! systemctl status &>/dev/null "$service"; then # detects if service exists
+				echo -e "${redColor}[!] Doesn't exist${endColor}"
 				fi
 			else
-				echo -e "${redColour}$err${endColour}" # Si existe imprime un log del error
+				echo -e "${redColor}$error${endColor}" # If exists, prints error log
 			fi
 		fi
 	done
-	salto
+	separator
 }
-if [[ "$checkser" -eq 1 ]]; then
-		checkservices "$services"
+if [[ "$check_services_flag" -eq 1 ]]; then
+		check_services "$services"
 fi
