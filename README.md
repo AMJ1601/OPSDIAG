@@ -18,3 +18,5 @@ Clone the repository:
 git clone https://github.com/AMJ1601/OPSDIAG
 cd OPSDIAG
 chmod +x opsdiag.sh
+```
+https://github.com/AMJ1601/OPSDIAG/
